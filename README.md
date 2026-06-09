@@ -144,10 +144,3 @@ src/
 
 Vite and vanilla Three.js, no framework. Icons from [Lucide](https://lucide.dev)
 (ISC). Type: Bricolage Grotesque, Hanken Grotesk, JetBrains Mono.
-
-## Deploy to GitHub Pages
-
-This repo ships a workflow (`.github/workflows/deploy.yml`) that builds the site
-and publishes it on every push to `main`. After pushing, go to the repo's
-**Settings -> Pages**, set **Source** to **GitHub Actions**, and the site goes
-live at `https://natekali.github.io/netviz/`.
