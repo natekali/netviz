@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Netviz · 3D network topology</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 7 L5.5 16.5 M12 7 L18.5 16.5 M6 16.5H18' stroke='%23ece8df' stroke-width='1.6' fill='none'/%3E%3Ccircle cx='12' cy='6' r='2.6' fill='%23ece8df'/%3E%3Ccircle cx='5.5' cy='17.5' r='2.6' fill='%23ece8df'/%3E%3Ccircle cx='18.5' cy='17.5' r='2.6' fill='%23ece8df'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!-- 3D canvas lives full-window behind everything -->
+    <div id="app"></div>
+
+    <!-- ===== Top bar ===== -->
+    <header id="topbar">
+      <a class="brand" href="index.html" title="Back to home">
+        <svg class="brand-mark" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 7.2 L5.5 16.5 M12 7.2 L18.5 16.5 M6 16.5 H18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          <circle cx="12" cy="6" r="2.3" fill="currentColor" />
+          <circle cx="5.5" cy="17.5" r="2.3" fill="currentColor" />
+          <circle cx="18.5" cy="17.5" r="2.3" fill="currentColor" />
+        </svg>
+        <span class="brand-name">Netviz</span>
+      </a>
+      <nav class="tabs">
+        <button data-view="builder" class="active">Build</button>
+        <button data-view="viewer">View</button>
+      </nav>
+      <div class="actions">
+        <button id="btn-new" title="Start a blank network">New</button>
+        <button id="btn-sample" title="Load the example network">Sample</button>
+        <button id="btn-import" title="Import a network JSON">Import</button>
+        <button id="btn-export" title="Download this network as JSON">Export</button>
+        <button id="btn-visualize" class="primary">Visualize</button>
+      </div>
+    </header>
+
+    <!-- ===== Builder view (form) ===== -->
+    <main id="builder" class="view"></main>
+
+    <!-- ===== Viewer HUD overlay ===== -->
+    <div id="hud" class="view" hidden>
+      <header id="header" class="panel">
+        <div class="header-title" id="net-name">Network</div>
+        <div class="header-sub">
+          <span id="net-meta">-</span>
+          <span class="dot-sep">•</span>
+          <span id="net-counts">-</span>
+        </div>
+      </header>
+      <section id="filter" class="panel" aria-label="Status filter"></section>
+      <section id="view-tools" class="panel" aria-label="View tools">
+        <button data-act="reset">Reset view</button>
+        <button data-act="png">Save image</button>
+        <label class="vt-toggle"><input type="checkbox" id="group-toggle" /> Group similar</label>
+      </section>
+      <section id="legend" class="panel" aria-label="Legend"></section>
+      <aside id="detail" class="panel" data-open="false">
+        <button id="detail-close" aria-label="Close">×</button>
+        <div id="detail-body"></div>
+      </aside>
+      <div id="tooltip" role="status"></div>
+      <div id="orient" class="panel" aria-label="Orientation">
+        <button data-orient="vertical" class="active">Vertical</button>
+        <button data-orient="horizontal">Horizontal</button>
+      </div>
+      <div id="hint">drag to orbit · scroll to zoom · hover a device · click to focus</div>
+    </div>
+
+    <div id="loader"><div class="spinner"></div><span>Loading…</span></div>
+    <div id="error-banner"></div>
+    <div id="toast"></div>
+
+    <script type="module" src="/src/app.js"></script>
+  </body>
+</html>

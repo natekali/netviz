@@ -1,0 +1,21 @@
+{
+  "name": "netviz",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Netviz - describe your IT network in a form and see it as a clean, interactive 3D topology.",
+  "homepage": "https://natekali.github.io/netviz/",
+  "repository": { "type": "git", "url": "https://github.com/natekali/netviz" },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "lucide-static": "^1.17.0",
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  }
+}

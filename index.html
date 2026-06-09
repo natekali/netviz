@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Netviz · see your network in 3D</title>
+    <meta name="description" content="Describe your network in a quick form and get a clean, interactive 3D topology you can actually read. No drawing, no login, runs in your browser." />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 7 L5.5 16.5 M12 7 L18.5 16.5 M6 16.5H18' stroke='%23a855f7' stroke-width='1.6' fill='none'/%3E%3Ccircle cx='12' cy='6' r='2.6' fill='%23a855f7'/%3E%3Ccircle cx='5.5' cy='17.5' r='2.6' fill='%23a855f7'/%3E%3Ccircle cx='18.5' cy='17.5' r='2.6' fill='%23a855f7'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #08070d;
+        --violet: #a855f7;
+        --violet-2: #7c3aed;
+        --violet-soft: #c9b6ff;
+        --text: #f3eefb;
+        --muted: #a39db8;
+        --faint: #6a6480;
+        --line: rgba(168, 139, 250, 0.16);
+        --line-strong: rgba(168, 139, 250, 0.32);
+        --display: "Bricolage Grotesque", system-ui, sans-serif;
+        --sans: "Hanken Grotesk", system-ui, sans-serif;
+        --mono: "JetBrains Mono", ui-monospace, monospace;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      /* atmosphere: dot grid + violet glows */
+      body::before {
+        content: "";
+        position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        background-image: radial-gradient(rgba(168, 139, 250, 0.05) 1px, transparent 1px);
+        background-size: 26px 26px;
+        mask-image: radial-gradient(circle at 50% 30%, #000 30%, transparent 80%);
+        -webkit-mask-image: radial-gradient(circle at 50% 30%, #000 30%, transparent 80%);
+      }
+      .glow {
+        position: fixed; z-index: 0; pointer-events: none; border-radius: 50%;
+        filter: blur(40px);
+      }
+      .glow-1 { top: -240px; left: 50%; transform: translateX(-50%); width: 900px; height: 640px;
+        background: radial-gradient(circle, rgba(124, 58, 237, 0.45), transparent 62%); }
+      .glow-2 { top: 520px; right: -200px; width: 600px; height: 600px;
+        background: radial-gradient(circle, rgba(168, 85, 247, 0.18), transparent 65%); }
+
+      .wrap { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+      /* nav */
+      .nav {
+        position: relative; z-index: 2;
+        display: flex; align-items: center; justify-content: space-between;
+        max-width: 1080px; margin: 0 auto; padding: 22px 28px;
+      }
+      .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
+      .brand span { font-family: var(--display); font-weight: 700; font-size: 21px; letter-spacing: -0.02em; }
+
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-family: var(--sans); font-weight: 600; font-size: 15px;
+        padding: 11px 22px; border-radius: 11px; cursor: pointer; text-decoration: none;
+        border: 1px solid transparent; transition: transform 0.18s, box-shadow 0.18s, background 0.18s, border-color 0.18s;
+        white-space: nowrap;
+      }
+      .btn-primary {
+        color: #fff;
+        background: linear-gradient(135deg, #b06bff, #7c3aed);
+        box-shadow: 0 10px 34px -8px rgba(124, 58, 237, 0.6);
+      }
+      .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 44px -8px rgba(124, 58, 237, 0.8); }
+      .btn-ghost { color: var(--text); border-color: var(--line-strong); background: rgba(168, 139, 250, 0.05); }
+      .btn-ghost:hover { border-color: var(--violet); background: rgba(168, 139, 250, 0.12); }
+      .btn-sm { padding: 9px 18px; font-size: 14px; }
+      .btn-lg { padding: 15px 30px; font-size: 17px; border-radius: 13px; }
+
+      /* hero */
+      .hero { text-align: center; padding: 70px 0 0; }
+      .eyebrow {
+        display: inline-block; font-family: var(--mono); font-size: 12px; letter-spacing: 0.22em;
+        text-transform: uppercase; color: var(--violet-soft);
+        border: 1px solid var(--line); border-radius: 30px; padding: 7px 16px; margin-bottom: 28px;
+        background: rgba(168, 139, 250, 0.06);
+      }
+      h1 {
+        font-family: var(--display); font-weight: 700;
+        font-size: clamp(2.7rem, 7.5vw, 5.4rem); line-height: 1.02; letter-spacing: -0.035em;
+        margin-bottom: 22px;
+      }
+      h1 .accent {
+        background: linear-gradient(120deg, #c9b6ff, #a855f7 60%, #7c3aed);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      .sub { max-width: 620px; margin: 0 auto 36px; color: var(--muted); font-size: clamp(1rem, 1.6vw, 1.18rem); }
+      .cta-row { display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; }
+
+      /* product preview */
+      .preview { margin: 64px auto 0; max-width: 1000px; perspective: 1800px; }
+      .preview-frame {
+        border: 1px solid var(--line-strong); border-radius: 16px; overflow: hidden;
+        background: #0c0a14;
+        box-shadow: 0 50px 130px -40px rgba(124, 58, 237, 0.6), 0 0 0 1px rgba(0,0,0,0.4);
+        transform: rotateX(7deg); transform-origin: center top;
+        transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .preview-frame:hover { transform: rotateX(0deg); }
+      .preview-bar { display: flex; gap: 7px; padding: 12px 15px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,0.02); }
+      .preview-bar i { width: 11px; height: 11px; border-radius: 50%; background: rgba(168,139,250,0.25); }
+      .preview-frame img { display: block; width: 100%; height: auto; }
+
+      /* features */
+      .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 110px; }
+      .card {
+        border: 1px solid var(--line); border-radius: 16px; padding: 26px;
+        background: rgba(168, 139, 250, 0.025); transition: border-color 0.2s, transform 0.2s, background 0.2s;
+      }
+      .card:hover { border-color: var(--line-strong); transform: translateY(-3px); background: rgba(168, 139, 250, 0.05); }
+      .card .ic {
+        width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center;
+        background: rgba(168, 85, 247, 0.12); border: 1px solid var(--line-strong); margin-bottom: 16px; color: var(--violet);
+      }
+      .card h3 { font-family: var(--display); font-weight: 650; font-size: 1.25rem; letter-spacing: -0.01em; margin-bottom: 8px; }
+      .card p { color: var(--muted); font-size: 0.97rem; }
+
+      /* steps */
+      .steps { display: flex; gap: 14px; margin-top: 28px; flex-wrap: wrap; }
+      .step { flex: 1; min-width: 220px; display: flex; align-items: baseline; gap: 12px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px; }
+      .step .n { font-family: var(--mono); font-size: 13px; color: var(--violet); }
+      .step b { font-family: var(--sans); font-weight: 600; display: block; }
+      .step span { color: var(--faint); font-size: 0.9rem; }
+
+      /* closing cta */
+      .cta-band { text-align: center; margin: 130px 0 0; padding: 64px 28px; border: 1px solid var(--line); border-radius: 22px; background: radial-gradient(circle at 50% 0%, rgba(124,58,237,0.18), transparent 70%); }
+      .cta-band h2 { font-family: var(--display); font-weight: 700; font-size: clamp(2rem, 4.5vw, 3.1rem); letter-spacing: -0.03em; margin-bottom: 22px; }
+
+      /* footer */
+      footer { margin-top: 80px; border-top: 1px solid var(--line); }
+      .foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 26px 28px 50px; max-width: 1080px; margin: 0 auto; }
+      .foot .left { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+      .foot a { color: var(--muted); text-decoration: none; font-size: 13px; transition: color 0.15s; }
+      .foot a:hover { color: var(--text); }
+      .foot .links { display: flex; gap: 20px; }
+
+      /* entrance */
+      @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+      .hero > *, .preview { animation: rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) both; }
+      .eyebrow { animation-delay: 0.02s; }
+      h1 { animation-delay: 0.08s; }
+      .sub { animation-delay: 0.16s; }
+      .cta-row { animation-delay: 0.24s; }
+      .preview { animation-delay: 0.34s; }
+      @media (prefers-reduced-motion: reduce) {
+        .hero > *, .preview { animation: none; }
+        .preview-frame { transform: none; }
+        html { scroll-behavior: auto; }
+      }
+
+      @media (max-width: 720px) {
+        .features { grid-template-columns: 1fr; }
+        .hero { padding-top: 40px; }
+        .preview-frame { transform: none; }
+        .nav .btn-ghost { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+
+    <nav class="nav">
+      <a class="brand" href="./">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 7 L5.5 16.5 M12 7 L18.5 16.5 M6 16.5H18" stroke="#a855f7" stroke-width="1.6" stroke-linecap="round" />
+          <circle cx="12" cy="6" r="2.6" fill="#a855f7" />
+          <circle cx="5.5" cy="17.5" r="2.6" fill="#a855f7" />
+          <circle cx="18.5" cy="17.5" r="2.6" fill="#a855f7" />
+        </svg>
+        <span>Netviz</span>
+      </a>
+      <a class="btn btn-primary btn-sm" href="tool.html">Open the tool</a>
+    </nav>
+
+    <main class="wrap">
+      <section class="hero">
+        <div class="eyebrow">Network topology, in 3D</div>
+        <h1>Describe your network.<br />See it <span class="accent">in 3D</span>.</h1>
+        <p class="sub">
+          Netviz turns a quick form (or a screenshot of your existing diagram) into a clean,
+          interactive 3D topology you can actually read. No drawing, no login, it runs entirely
+          in your browser.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href="tool.html">Open the tool</a>
+          <a class="btn btn-ghost btn-lg" href="https://github.com/natekali/netviz" target="_blank" rel="noopener">View source</a>
+        </div>
+      </section>
+
+      <section class="preview">
+        <div class="preview-frame">
+          <div class="preview-bar"><i></i><i></i><i></i></div>
+          <img src="preview.png" alt="A network rendered as a 3D topology in Netviz" loading="lazy" />
+        </div>
+      </section>
+
+      <section class="features">
+        <div class="card">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="3.5" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="3.5" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg>
+          </div>
+          <h3>Describe, don't draw</h3>
+          <p>Add your zones and devices and say what connects to what. Quick-add drops in ten identical machines on a switch at once.</p>
+        </div>
+        <div class="card">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="M2 13l10 5 10-5"/></svg>
+          </div>
+          <h3>Reads like a real network</h3>
+          <p>Layers flow outside-in, vertical or horizontal. Real device icons, health states, live traffic. Technical or not, people get it.</p>
+        </div>
+        <div class="card">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M12 3v12M7 8l5-5 5 5"/></svg>
+          </div>
+          <h3>Bring what you already have</h3>
+          <p>Paste a JSON file, or turn a screenshot of an old Visio diagram into one with the built-in AI prompt.</p>
+        </div>
+        <div class="card">
+          <div class="ic">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M12 17V5M7 12l5 5 5-5"/></svg>
+          </div>
+          <h3>Yours to keep</h3>
+          <p>Export the whole picture as one JSON file and open it on any machine. It also auto-saves in your browser. No account, ever.</p>
+        </div>
+      </section>
+
+      <section class="steps">
+        <div class="step"><span class="n">01</span><div><b>Build</b><span>Fill the form or pick a template</span></div></div>
+        <div class="step"><span class="n">02</span><div><b>Visualize</b><span>See it in 3D, switch the layout</span></div></div>
+        <div class="step"><span class="n">03</span><div><b>Share</b><span>Export the JSON or a PNG</span></div></div>
+      </section>
+
+      <section class="cta-band">
+        <h2>See the shape of your network.</h2>
+        <a class="btn btn-primary btn-lg" href="tool.html">Open the tool</a>
+      </section>
+    </main>
+
+    <footer>
+      <div class="foot">
+        <div class="left">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 7 L5.5 16.5 M12 7 L18.5 16.5 M6 16.5H18" stroke="#a855f7" stroke-width="1.6" stroke-linecap="round" />
+            <circle cx="12" cy="6" r="2.6" fill="#a855f7" /><circle cx="5.5" cy="17.5" r="2.6" fill="#a855f7" /><circle cx="18.5" cy="17.5" r="2.6" fill="#a855f7" />
+          </svg>
+          <span>Netviz. Built with Three.js, runs in your browser.</span>
+        </div>
+        <div class="links">
+          <a href="tool.html">Open the tool</a>
+          <a href="https://github.com/natekali/netviz" target="_blank" rel="noopener">GitHub</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
